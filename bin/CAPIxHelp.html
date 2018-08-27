@@ -259,11 +259,15 @@ CAPIx就是为了解决这两个问题而开发的
 </p>
 
 <p>
-首先CAPIx摒弃了远程线程注入的方式,而是使用一个修改过的提取自win 2003的cmd
+首先CAPIx摒弃了远程线程注入的方式,<s>而是使用一个修改过的提取自win 2003的cmd</s>
 </p>
 
 <p>
-这个cmd在启动时会自动加载CAPIx.dll,免去了注入的危险
+这个cmd在启动时会自动加载CAPIx.dll,免去了(远程)注入的危险
+</p>
+
+<p style="color:rgb(128,128,128">
+gtr-0000: 二次修改的cmd会通过调用系统的cmd,并加载CAPIx.dll,属于启动时注入,不会报毒,且支持x64系统
 </p>
 
 <p>
@@ -564,7 +568,7 @@ API是可以指定返回值类型的
 <h3 id="sec-3-3"><span class="section-number-3">3.3</span> CAPIDll</h3>
 <div class="outline-text-3" id="text-3-3">
 <dl class="org-dl">
-<dt> CAPIll /? </dt><dd>返回CAPIx的基本信息
+<dt> CAPIDll /? </dt><dd>返回CAPIx的基本信息
 </dd>
 <dt> CAPIDll Ver </dt><dd>返回CAPIx的版本, 保存在变量CAPI_Ret中
 </dd>
