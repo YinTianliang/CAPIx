@@ -2,16 +2,17 @@
 
 #include "CPWDLLA.H"
 
-//#include <shlwapi.h>
+#include <shlwapi.h>
 #include <direct.h>
 #include <stdio.h>
 #include <conio.h>
 #include <string.h>
 #include <windows.h>
 
-BOOL WINAPI	PathFileExistsA(const char *);
-LPTSTR WINAPI	GetCommandLineA(void);
-PTSTR WINAPI	PathGetArgsA(PTSTR pszPath);
+//FOR TCC
+//BOOL WINAPI	PathFileExistsA(const char *);
+//LPTSTR WINAPI	GetCommandLineA(void);
+//PTSTR WINAPI	PathGetArgsA(PTSTR pszPath);
 
 int main(int argc, char *argv[])
 {
