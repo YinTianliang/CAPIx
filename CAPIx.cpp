@@ -69,15 +69,15 @@ CAPI_Ret	*APICdecl(void *, int *, int, short);
 
 wchar_t		*GetVar(wchar_t *);
 void		SetVar(wchar_t *, int);
-void		HookAPI(const char *, void *);			//线程函数
+void		HookAPI(const char *, void *);	//线程函数
 void		MemPut(int, wchar_t **);
 void		MemPrint(int, wchar_t **);
 void		MemCopy(int, wchar_t **);
 
 char		*WcharToChar(wchar_t *);
 
-bool		*bakSetEnv = (bool *) SetEnvironmentVariableW;	//保存函数的入口地址
-DWORD		*bakGetEnv = (DWORD *) GetEnvironmentVariableW;
+void		*bakSetEnv;			//保存函数的入口地址
+void		*bakGetEnv;
 
 //bool *NewAddr = (bool *)CallCAPI;
 
@@ -87,7 +87,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpvReserved)
 	//OleInitialize(NULL); //初始化COM调用功能
 	if(dwReason == DLL_PROCESS_ATTACH)
 	{
-		HookAPI("SetEnvironmentVariableW", SetCall_CAPI);
+		bakSetEnv = HookAPI("SetEnvironmentVariableW", SetCall_CAPI);
 		DisableThreadLibraryCalls(hModule);
 
 		/*if(Load())
@@ -822,7 +822,7 @@ bool CAPI(wchar_t *CmdLine)
 		{
 			if(!wcsicmp(argv[2], L"Enable"))
 			{
-				HookAPI("SetEnvironmentVariableW", SetCall_CAPI);
+				bakSetEnv = HookAPI("SetEnvironmentVariableW", SetCall_CAPI);
 			}
 			else if(!wcsicmp(argv[2], L"Disable"))
 			{
@@ -833,7 +833,7 @@ bool CAPI(wchar_t *CmdLine)
 		{
 			if(!wcsicmp(argv[2], L"Enable"))
 			{
-				HookAPI("GetEnvironmentVariableW", GetCall_CAPI);
+				bakGetEnv = HookAPI("GetEnvironmentVariableW", GetCall_CAPI);
 			}
 			else if(!wcsicmp(argv[2], L"Disable"))
 			{
