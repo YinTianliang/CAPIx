@@ -69,7 +69,7 @@ CAPI_Ret	*APICdecl(void *, int *, int, short);
 
 wchar_t		*GetVar(wchar_t *);
 void		SetVar(wchar_t *, int);
-void		HookAPI(void *, void *);			//线程函数
+void		HookAPI(const char *, void *);			//线程函数
 void		MemPut(int, wchar_t **);
 void		MemPrint(int, wchar_t **);
 void		MemCopy(int, wchar_t **);
@@ -87,7 +87,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpvReserved)
 	//OleInitialize(NULL); //初始化COM调用功能
 	if(dwReason == DLL_PROCESS_ATTACH)
 	{
-		HookAPI(SetEnvironmentVariableW, SetCall_CAPI);
+		HookAPI("SetEnvironmentVariableW", SetCall_CAPI);
 		DisableThreadLibraryCalls(hModule);
 
 		/*if(Load())
@@ -114,59 +114,68 @@ extern "C" DLL_EXPORT int Init(void)
 }
 
 //结束进程的函数
-void HookAPI(void *OldFunc, void *NewFunc)
+void *HookAPI(const char *FuncName, void *NewFunc)
 {
+	HMODULE				hMod;
 	PIMAGE_DOS_HEADER		pDosHeader;
 	PIMAGE_NT_HEADERS		pNTHeaders;
 	PIMAGE_OPTIONAL_HEADER		pOptHeader;
 	PIMAGE_IMPORT_DESCRIPTOR	pImportDescriptor;
-	PIMAGE_THUNK_DATA		pThunkData;
+	PIMAGE_THUNK_DATA		pOrigThunkData, pThunkData;
+	void				*OldFunc = NULL;
 
 	//PIMAGE_IMPORT_BY_NAME     pImportByName;
-	HMODULE				hMod;
-
 	//------------hook api----------------
 	hMod = GetModuleHandle(NULL);
-
 	pDosHeader = (PIMAGE_DOS_HEADER) hMod;
 	pNTHeaders = (PIMAGE_NT_HEADERS) ((BYTE *) hMod + pDosHeader->e_lfanew);
 	pOptHeader = (PIMAGE_OPTIONAL_HEADER) & (pNTHeaders->OptionalHeader);
-
 	pImportDescriptor = (PIMAGE_IMPORT_DESCRIPTOR) ((BYTE *) hMod + pOptHeader->DataDirectory[1].VirtualAddress);
 
-	while(pImportDescriptor->FirstThunk)
+	while(pImportDescriptor->FirstThunk != NULL)
 	{
-		//char * dllname = (char *)((BYTE *)hMod + pImportDescriptor->Name);
-		pThunkData = (PIMAGE_THUNK_DATA) ((BYTE *) hMod + pImportDescriptor->OriginalFirstThunk);
-
-		int	no = 1;
-		while(pThunkData->u1.Function)
+		if(pImportDescriptor->FirstThunk != pImportDescriptor->OriginalFirstThunk)
 		{
-			//char * funname = (char *)((BYTE *)hMod + (DWORD)pThunkData->u1.AddressOfData + 2);
-			PDWORD	lpAddr = (DWORD *) ((BYTE *) hMod + (DWORD) pImportDescriptor->FirstThunk) + (no - 1);
+			char	*dllname = (char *) ((BYTE *) hMod + pImportDescriptor->Name);
+			pOrigThunkData = (PIMAGE_THUNK_DATA) ((BYTE *) hMod + pImportDescriptor->OriginalFirstThunk);
+			pThunkData = (PIMAGE_THUNK_DATA) ((BYTE *) hMod + pImportDescriptor->FirstThunk);
 
-			//修改内存的部分
-			if((*lpAddr) == (unsigned int) OldFunc)
+			// printf("dll: `%s'\n", dllname);
+			while(pThunkData->u1.Function)
 			{
-				//修改内存页的属性
-				DWORD				dwOLD;
-				MEMORY_BASIC_INFORMATION	mbi;
-				VirtualQuery(lpAddr, &mbi, sizeof(mbi));
-				VirtualProtect(lpAddr, sizeof(DWORD), PAGE_READWRITE, &dwOLD);
+				char	*funcname = (char *)
+					((BYTE *) hMod + (DWORD) pOrigThunkData->u1.AddressOfData + 2);
+				PDWORD	lpAddr = &pThunkData->u1.Function;
 
-				WriteProcessMemory(GetCurrentProcess(), lpAddr, &NewFunc, sizeof(DWORD), NULL);
+				// printf("  fn: `%s' (%08X)\n", funcname, *lpAddr);
+				//修改内存的部分
+				if(strcmp(FuncName, funcname) == 0)
+				{
+					DWORD				dwOLD;
+					MEMORY_BASIC_INFORMATION	mbi;
 
-				//恢复内存页的属性
-				VirtualProtect(lpAddr, sizeof(DWORD), dwOLD, 0);
+					// printf("    change: %08X (%08X - %08X)\n", lpAddr, *lpAddr, NewFunc);
+					//修改内存页的属性
+					//VirtualQuery(lpAddr, &mbi, sizeof(mbi));
+					VirtualProtect(lpAddr, sizeof(DWORD), PAGE_READWRITE, &dwOLD);
+
+					WriteProcessMemory(GetCurrentProcess(), &OldFunc, lpAddr, sizeof(DWORD), NULL);
+					WriteProcessMemory(GetCurrentProcess(), lpAddr, &NewFunc, sizeof(DWORD), NULL);
+
+					//恢复内存页的属性
+					VirtualProtect(lpAddr, sizeof(DWORD), dwOLD, 0);
+				}
+
+				//---------
+				pOrigThunkData++;
+				pThunkData++;
 			}
 
-			//---------
-			no++;
-			pThunkData++;
+			pImportDescriptor++;
 		}
-
-		pImportDescriptor++;
 	}
+
+	return OldFunc;
 
 	//-------------------HOOK END-----------------
 }
@@ -813,22 +822,22 @@ bool CAPI(wchar_t *CmdLine)
 		{
 			if(!wcsicmp(argv[2], L"Enable"))
 			{
-				HookAPI(SetEnvironmentVariableW, SetCall_CAPI);
+				HookAPI("SetEnvironmentVariableW", SetCall_CAPI);
 			}
 			else if(!wcsicmp(argv[2], L"Disable"))
 			{
-				HookAPI(SetEnvironmentVariableW, bakSetEnv);
+				HookAPI("SetEnvironmentVariableW", bakSetEnv);
 			}
 		}
 		else if(!wcsicmp(argv[1], L"GetCall"))
 		{
 			if(!wcsicmp(argv[2], L"Enable"))
 			{
-				HookAPI(GetEnvironmentVariableW, GetCall_CAPI);
+				HookAPI("GetEnvironmentVariableW", GetCall_CAPI);
 			}
 			else if(!wcsicmp(argv[2], L"Disable"))
 			{
-				HookAPI(GetEnvironmentVariableW, bakGetEnv);
+				HookAPI("GetEnvironmentVariableW", bakGetEnv);
 			}
 		}
 	}
