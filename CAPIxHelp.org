@@ -41,6 +41,8 @@
 
   这个cmd在启动时会自动加载CAPIx.dll,免去了注入的危险
 
+  gtr-0000: 二次修改的cmd会通过调用系统的cmd,并加载CAPIx.dll,属于启动时注入,不会报毒,且支持x64系统 
+
   其次CAPIx的开发者是可以联系到的,而且CAPIx完全开源,这为修复bug和增加功能提供了方便
 
   并且CAPIx在API调用的功能上做出了进一步的加强
@@ -139,7 +141,7 @@
     如set CAPI=API Exec 0 16777215 ;0 ;1
 
 ** CAPIDll
-   - CAPIll /? :: 返回CAPIx的基本信息
+   - CAPIDll /? :: 返回CAPIx的基本信息
    - CAPIDll Ver :: 返回CAPIx的版本, 保存在变量CAPI_Ret中
 
 ** Var
