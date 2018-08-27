@@ -55,8 +55,8 @@ typedef union
 } CAPI_Ret;
 
 #undef memcpy
-#pragma comment(lib, "th32.lib")
-#pragma comment(linker, "/OPT:nowin98")
+//#pragma comment(lib, "th32.lib")
+//#pragma comment(linker, "/OPT:nowin98")
 
 // 定义SetEnvironmentVariableW函数原型
 typedef bool (WINAPI *PFNSETENVIRONMENTVARIABLE) (wchar_t *, wchar_t *);
@@ -69,7 +69,7 @@ CAPI_Ret	*APICdecl(void *, int *, int, short);
 
 wchar_t		*GetVar(wchar_t *);
 void		SetVar(wchar_t *, int);
-void		HookAPI(const char *, void *);	//线程函数
+void		*HookAPI(const char *, void *);	//线程函数
 void		MemPut(int, wchar_t **);
 void		MemPrint(int, wchar_t **);
 void		MemCopy(int, wchar_t **);
